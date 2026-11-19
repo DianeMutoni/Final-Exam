@@ -1,0 +1,279 @@
+---
+title: "Exploratory Analysis of World Happiness and Corruption"
+author: "MUTONI Diane"
+date: "2026-11-19"
+output: html_document
+---
+
+
+
+# Downloading data and load them to R studio
+```{r}
+library(tidyverse)
+library(dplyr)
+Happiness_corruption<-read.csv("C:/Users/FALCON TECHNOLOGY/Desktop/20252MBI033_R_for_datascience_exam/WorldHappiness_Corruption_2015_2020.csv")
+```
+
+#to display the variable names
+```{r}
+names(Happiness_corruption)
+```
+#the top 5 rows
+```{r}
+head(Happiness_corruption,5)
+```
+
+#the bottom 10rows,
+```{r}
+tail(Happiness_corruption,10)
+```
+
+
+#the data type of each variable
+```{r}
+str(Happiness_corruption)
+```
+
+
+
+#the shape of the dataset
+```{r}
+dim(Happiness_corruption)
+```
+
+# check for duplicate rows 
+```{r}
+sum(duplicated(Happiness_corruption))
+```
+the result for the codes above shows that there are no duplicate rows in our dataset
+
+#find the number of missing values in each column
+```{r}
+colSums(is.na(Happiness_corruption))
+```
+In the above commands,the output shows us that there are no missing values in our dataset
+
+#use of box plot to check if there are any outliers in the quantitative variables.
+```{r}
+# Select numeric variables
+numeric_data <- Happiness_corruption[sapply(Happiness_corruption, is.numeric)]
+
+
+numeric_data$Year <- NULL
+
+# Create boxplots
+boxplot(numeric_data,
+        main = "Boxplot of Quantitative Variables",
+        col = "blue",
+        las = 2)
+
+    
+```
+
+#detecting outliers
+```{r}
+numeric_data <- Happiness_corruption %>%
+  select(where(is.numeric))
+
+par(mfrow = c(3, 3))
+
+for (col in names(numeric_data)) {
+  boxplot(
+    numeric_data[[col]],
+    main = col,
+    col = "lightblue",
+    horizontal = TRUE
+  )
+}
+```
+
+## 4.2 Descriptive summaries and graphs
+#Summarize the dataset by Continent
+```{r}
+continent_summary <- Happiness_corruption %>%
+  group_by(continent) %>%
+  summarise(Observations = n(),
+            Mean_Happiness = mean(happiness_score, na.rm = TRUE),
+            Mean_CPI = mean(cpi_score, na.rm = TRUE),
+            Mean_GDP = mean(gdp_per_capita, na.rm = TRUE),
+            .groups = "drop") %>%
+  arrange(desc(Observations))
+
+print(continent_summary, digits = 3,
+      caption = "Summary statistics by continent")
+
+ggplot(continent_summary,
+       aes(x = reorder(continent, Mean_Happiness), y = Mean_Happiness)) +
+  geom_col(fill = "blue") +
+  coord_flip() +
+  labs(title = "Average happiness score by continent",
+       x = "Continent", y = "Average happiness score") +
+  theme_minimal()
+```
+
+# Summary by year
+```{r}
+year_summary <-Happiness_corruption %>%
+  group_by(Year) %>%
+  summarise(Observations = n(),
+            Mean_Happiness = mean(happiness_score, na.rm = TRUE),
+            Mean_CPI = mean(cpi_score, na.rm = TRUE),
+            Mean_GDP = mean(gdp_per_capita, na.rm = TRUE),
+            .groups = "drop")
+
+print(year_summary, digits = 3,
+      caption = "Summary statistics by year")
+ggplot(year_summary, aes(x = Year, y = Mean_Happiness)) +
+  geom_line(linewidth = 1, colour = "blue") +
+  geom_point(size = 2, colour = "red") +
+  scale_x_continuous(breaks = sort(unique(Happiness_corruption$Year))) +
+  labs(title = "Global average happiness score, 2015–2020",
+       x = "Year", y = "Average happiness score") +
+  theme_minimal()
+```
+
+#Happiness Score, CPI Score and GDP per Capita.
+```{r}
+p1 <- ggplot(Happiness_corruption , aes(x = happiness_score)) +
+  geom_histogram(bins = 25, fill = "blue", colour = "white") +
+  labs(title = "Distribution of happiness scores",
+       x = "Happiness score", y = "Number of observations") +
+  theme_minimal()
+
+p2 <- ggplot(Happiness_corruption , aes(x = cpi_score)) +
+  geom_histogram(binwidth = 10, boundary = 0,
+                 fill = "green", colour = "white") +
+  labs(title = "Distribution of CPI scores",
+       x = "CPI score", y = "Number of observations") +
+  theme_minimal()
+
+p3 <- ggplot(Happiness_corruption , aes(x = gdp_per_capita)) +
+  geom_histogram(bins = 25, fill = "orange", colour = "white") +
+  labs(title = "Distribution of GDP per capita",
+       x = "GDP per capita", y = "Number of observations") +
+  theme_minimal()
+p1
+p2
+p3
+```
+The EDA shows that . . . 28.79. . . . . % of the observations come from European coun-
+tries. Moreover, . . . .248 . . . . out of all country–year observations have a CPI score
+
+of 50 or above. In addition, the average happiness score of Europe is . .1.42 . . . . . .
+
+times the average happiness score of Africa. Generally, the global average happi-
+ness score moved from . . . 5.4375. . . . . in 2015 to . . . . .5.5599 . . . in 2020.
+
+##4.3 How does the happiness score vary by continent,year,and by CPI score group
+#How does the happiness score vary by continent
+```{r}
+ggplot(Happiness_corruption, aes(x = continent, y = happiness_score, fill = continent)) +
+  geom_boxplot(show.legend = FALSE) +
+  labs(title = "Happiness score distribution by continent",
+       x = "Continent", y = "Happiness score") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+
+
+```
+#How does the happiness score vary by year
+```{r}
+ggplot(Happiness_corruption, aes(x = factor(Year), y = happiness_score,
+                 group = Year)) +
+  geom_boxplot(fill = "lightblue") +
+  labs(title = "Happiness score distribution by year",
+       x = "Year", y = "Happiness score") +
+  theme_minimal()
+```
+
+#How does the happiness score vary by CPI score group
+```{r}
+ Happiness_corruption<- Happiness_corruption %>%
+  mutate(CPI_Group = cut(cpi_score,
+                        breaks = seq(0, 100, by = 10),
+                        right = FALSE,
+                        include.lowest = TRUE,
+                        labels = paste(seq(0, 90, 10),
+                                       seq(9, 99, 10), sep = "–")))
+
+cpi_group_summary <- Happiness_corruption %>%
+  group_by(CPI_Group) %>%
+  summarise(Observations = n(),
+            Mean_Happiness = mean(happiness_score, na.rm = TRUE),
+            .groups = "drop")
+
+print(cpi_group_summary, digits = 3,
+      caption = "Average happiness by CPI interval")
+
+ggplot(cpi_group_summary,
+       aes(x = CPI_Group, y = Mean_Happiness, group = 1)) +
+  geom_line(colour = "blue", linewidth = 1) +
+  geom_point(size = 2, colour = "yellow") +
+  labs(title = "Average happiness by CPI score group",
+       x = "CPI score interval", y = "Average happiness score") +
+  theme_minimal()
+```
+
+## Scatter plot and correlation between CPI and happiness
+
+```{r cpi-correlation}
+ggplot(Happiness_corruption, aes(x = cpi_score, y = happiness_score)) +
+  geom_point(alpha = 0.6, colour = "steelblue") +
+  geom_smooth(method = "lm", se = TRUE, colour = "darkred") +
+  labs(title = "Relationship between CPI and happiness",
+       x = "CPI score (higher means less perceived corruption)",
+       y = "Happiness score") +
+  theme_minimal()
+
+cpi_happiness_correlation <- cor(Happiness_corruption$cpi_score,
+                                 Happiness_corruption$happiness_score,
+                                 use = "complete.obs",
+                                 method = "pearson")
+cpi_happiness_correlation
+```
+
+#4.4Identify one group of countries with a notably low happiness level.
+```{r}
+low_group <-Happiness_corruption %>%
+  filter(continent == "Africa", cpi_score < 30)
+
+low_group_countries <- sort(unique(low_group$Country))
+low_group_mean <- mean(low_group$happiness_score, na.rm = TRUE)
+global_mean <- mean(Happiness_corruption$happiness_score, na.rm = TRUE)
+difference <- low_group_mean - global_mean
+percent_below <- 100 * (global_mean - low_group_mean) / global_mean
+
+print(low_group %>%
+        group_by(Country) %>%
+        summarise(Observations = n(),
+                  Average_Happiness = mean(happiness_score),
+                  Average_CPI = mean(cpi_score),
+                  .groups = "drop") %>%
+        arrange(Average_Happiness),
+      digits = 3,
+      caption = "Countries in the selected low-happiness group")
+
+cat("Number of country-year observations:", nrow(low_group), "\n")
+cat("Number of distinct countries:", length(low_group_countries), "\n")
+cat("Countries:", paste(low_group_countries, collapse = ", "), "\n")
+cat("Group average happiness:", round(low_group_mean, 3), "\n")
+cat("Global average happiness:", round(global_mean, 3), "\n")
+cat("Difference (group minus global):", round(difference, 3), "\n")
+cat("Group average is", round(percent_below, 1),
+    "% below the global average.\n")
+```
+
+
+#4.5 Provide five practical recommendations for policymakers who want to improve
+#citizenswell-being, based on your analysis.  ́
+
+1.Prioritise countries and communities facing observations with CPI below 30 because they have a lower average happiness score than the global average.
+
+2.Policymakers should protect civil rights, improve
+   access to information and create meaningful opportunities for citizens to
+   participate in decisions that affect them(personal freedom)
+   
+3.Promote transparent and accountable institutions
+4.Improve public health and access to healthcare
+5.Strengthen economic opportunity
+
